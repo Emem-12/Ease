@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Ease</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="www_mywebsite_com">www.mywebsite.com</string>
+    <string name="christophy">/@Christophy</string>
+    <string name="christophy_barth">Christophy Barth</string>
+    <string name="lives_in_grace_bill_street_eket_nigeria">Lives in Grace Bill street,Eket,Nigeria</string>
+    <string name="works_at_fhenix_africa">Works at Fhenix Africa</string>
+</resources>
