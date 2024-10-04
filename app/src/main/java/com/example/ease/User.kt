@@ -1,16 +1,17 @@
 package com.example.ease
 
+import com.example.ease.models.Company
 
-import androidx.annotation.DrawableRes
-
-data class User (var name: String,
-                    var userName: String,
-                    var website: String,
-                    var address: Address,
-                    var description: String,
-                    var phoneNumber: String,
-                    @DrawableRes
-                    var imageRes: Int)
+data class User(
+    val address: Address,
+    val company: Company,
+    val email: String,
+    val id: Int,
+    val name: String,
+    val phone: String,
+    val username: String,
+    val website: String
+)
 
 
 
