@@ -1,76 +1,132 @@
 package com.example.ease
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.ease.databinding.CustomAlertDialogBinding
 import com.example.ease.databinding.FragmentHomeBinding
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.example.ease.repo.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
-
 
 class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
     private lateinit var userAdapter: UserAdapter
-    private lateinit var user: MutableList<User>
-
+    private lateinit var users: MutableList<User>
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentHomeBinding.inflate(layoutInflater)
         return binding.root
     }
 
-    private fun httpGetRequest() {
-        // Specify the URL
-        val url = URL("https://jsonplaceholder.typicode.com/users")
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
+        users = mutableListOf()
+        userAdapter = UserAdapter(users, requireContext())
+
+        getListOfUsers()
+
+        binding.recyclerView.apply {
+            adapter = userAdapter
+            layoutManager =
+                LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        }
+    }
+
+    private fun getListOfUsers() {
         CoroutineScope(Dispatchers.IO).launch {
-            // Open a connection
-            val connection = url.openConnection() as HttpURLConnection
+            val response = UserRepository().getUsers()
 
-            try {
-                connection.requestMethod = "GET"  // HTTP GET method
-
-                // Check the response code
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = connection.inputStream.bufferedReader().use { it.readText() }
-
-                    val gson = Gson()
-                    val type = object : TypeToken<List<User>>() {}.type
-                    val listOfUsers = gson.fromJson<List<User>>(response, type)
-                    println("Response: ${listOfUsers.size}")
-
+            when (response) {
+                is Response.Success -> {
                     withContext(Dispatchers.Main) {
-                        user.addAll(listOfUsers)
-                        //  binding.name.text = listOfUsers.random().name
+                        val listOfUsers = response.data as List<User>
+                        users.addAll(listOfUsers)
+                        userAdapter.notifyItemRangeInserted(0, listOfUsers.size)
                     }
-                } else {
-                    println("Error: ${connection.responseCode}")
                 }
-            } catch (e: Exception) {
-                println("Failed because: ${e.message}")
-            } finally {
-                connection.disconnect()  // Always close the connection
+
+                is Response.Failure -> {
+//                    Snackbar.make(binding.root, response.message, Snackbar.LENGTH_INDEFINITE).show()
+                    withContext(Dispatchers.Main) {
+//                        showErrorDialog(message = response.message)
+                        showCustomViewErrorDialog(message = response.message)
+                    }
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                binding.progressBar.visibility = View.GONE
             }
         }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        httpGetRequest()
+    private fun showErrorDialog(message: String) {
+        val alertDialog = AlertDialog.Builder(requireContext())
+        alertDialog.setMessage(message)
 
+        //Test features.
+        alertDialog.setTitle("hello user")
+        alertDialog.setIcon(R.drawable.icon_phone_call)
+        alertDialog.setCancelable(false)
+
+        alertDialog.setPositiveButton("Retry") { _, _ ->
+            //
+        }
+        alertDialog.setNegativeButton(
+            "Okay"
+        ) { _, _ ->
+            //
+        }
+        alertDialog.setNeutralButton(
+            "Hmm!"
+        ) { _, _ ->
+            //
+        }
+        alertDialog.show()
+    }
+
+    private fun showCustomViewErrorDialog(message: String) {
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+
+        var alertDialog: AlertDialog? = null
+
+        val layoutInflater = LayoutInflater.from(requireContext())
+        val customAlertDialogBinding = CustomAlertDialogBinding.inflate(layoutInflater)
+        alertDialogBuilder.setView(customAlertDialogBinding.root)
+
+        alertDialogBuilder.setIcon(R.drawable.icon_phone_call)
+        alertDialogBuilder.setCancelable(false)
+
+        customAlertDialogBinding.apply {
+            title.text = "hello user"
+
+            this.message.text = message
+
+            negativeButton.text = "Okay"
+            negativeButton.setOnClickListener {
+                alertDialog?.dismiss()
+            }
+
+            positiveButton.text = "Retry"
+            positiveButton.setOnClickListener {
+                binding.progressBar.visibility = View.VISIBLE
+                getListOfUsers()
+                alertDialog?.dismiss()
+            }
+        }
+
+        alertDialog = alertDialogBuilder.create()
+        alertDialog.show()
     }
 }
-
-
